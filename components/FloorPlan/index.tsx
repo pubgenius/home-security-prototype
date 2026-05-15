@@ -3,7 +3,6 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { FloatingToolbar } from "./Toolbar";
 import { FloorPlanStage } from "./FloorPlanStage";
-import { SensorPanel } from "./SensorPanel";
 import { SideModal } from "./SideModal";
 import { COLORS, STAGE_W, STAGE_H } from "./constants";
 import type {
@@ -159,16 +158,6 @@ export function FloorPlan() {
           />
         )}
       </div>
-
-      {/* Bottom panel */}
-      <SensorPanel
-        devices={devices}
-        activeFloor={activeFloor}
-        selectedDevice={selectedDevice}
-        onSelect={handleDeviceSelect}
-        onRemove={handleRemove}
-        onStatusChange={handleStatusChange}
-      />
     </div>
   );
 }

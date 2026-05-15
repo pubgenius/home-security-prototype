@@ -148,25 +148,6 @@ export function FloatingToolbar({
                 <path d={ICON_PATHS[kind]} />
               </svg>
               {cfg.label}
-              {isActive && (
-                <span style={{ display: "flex", gap: "3px" }}>
-                  {cfg.statuses.map((s) => (
-                    <span
-                      key={s.value}
-                      style={{
-                        fontSize: "9.5px",
-                        padding: "1px 6px",
-                        borderRadius: "10px",
-                        background: s.color + "18",
-                        color: s.color,
-                        border: `1px solid ${s.color}30`,
-                      }}
-                    >
-                      {s.label}
-                    </span>
-                  ))}
-                </span>
-              )}
             </button>
           );
         })}

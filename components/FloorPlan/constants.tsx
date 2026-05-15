@@ -1,34 +1,53 @@
 import type { DeviceConfig, SensorKind, FloorPlanDef } from "./types";
 
-// Lucide-compatible SVG path data (viewBox 0 0 24 24)
-const LOCK_PATH =
+// All paths: viewBox 0 0 24 24, stroke-based, Lucide-style
+
+// Door closed = locked padlock
+const LOCK_CLOSED =
   "M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z M7 11V7a5 5 0 0 1 10 0v4";
-const WIFI_PATH =
-  "M5 12.55a11 11 0 0 1 14.08 0 M1.42 9a16 16 0 0 1 21.16 0 M8.53 16.11a6 6 0 0 1 6.95 0 M12 20h.01";
+
+// Door open = unlocked padlock (shackle open on right)
+const LOCK_OPEN =
+  "M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z M17 11V7a5 5 0 0 0-9.9-1";
+
+// Sensor ok = circle-check
+const CHECK_OK = "M20 6 9 17l-5-5";
+
+// Sensor alert = circle-x (something wrong)
+const CHECK_ALERT =
+  "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M15 9l-6 6 M9 9l6 6";
 
 export const DEVICE_CONFIGS: Record<SensorKind, DeviceConfig> = {
   door: {
     kind: "door",
     color: "#51cf66",
-    alertColor: "#ff9f43",
-    label: "Porta",
-    iconPath: LOCK_PATH,
+    alertColor: "#ff6b6b",
+    label: "Lock",
+    iconPaths: {
+      _default: LOCK_CLOSED,
+      closed: LOCK_CLOSED,
+      open: LOCK_OPEN,
+    },
     defaultStatus: "closed",
     statuses: [
-      { value: "closed", label: "Fechado", color: "#51cf66" },
-      { value: "open", label: "Aberto", color: "#ff9f43" },
+      { value: "closed", label: "Locked", color: "#51cf66" },
+      { value: "open", label: "Open", color: "#ff6b6b" },
     ],
   },
   sensor: {
     kind: "sensor",
-    color: "#4a9eff",
+    color: "#51cf66",
     alertColor: "#ff6b6b",
     label: "Sensor",
-    iconPath: WIFI_PATH,
+    iconPaths: {
+      _default: CHECK_OK,
+      ok: CHECK_OK,
+      alert: CHECK_ALERT,
+    },
     defaultStatus: "ok",
     statuses: [
-      { value: "ok", label: "Tudo ok", color: "#4a9eff" },
-      { value: "alert", label: "Algo errado", color: "#ff6b6b" },
+      { value: "ok", label: "Normal", color: "#51cf66" },
+      { value: "alert", label: "Alert", color: "#ff6b6b" },
     ],
   },
 };

@@ -11,7 +11,8 @@ export interface DeviceConfig {
   label: string;
   statuses: { value: DeviceStatus; label: string; color: string }[];
   defaultStatus: DeviceStatus;
-  iconPath: string;
+  /** SVG path data (viewBox 0 0 24 24) keyed by status value */
+  iconPaths: Partial<Record<DeviceStatus, string>> & { _default: string };
 }
 
 export interface Device {

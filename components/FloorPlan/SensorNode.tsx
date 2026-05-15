@@ -19,8 +19,6 @@ interface SensorNodeProps {
 }
 
 const LONG_PRESS_MS = 500;
-// Lucide Lock path viewBox 0 0 24 24 → centered on 0,0 by offsetting -12,-12
-const ICON_OFFSET = -12;
 
 export function SensorNode({
   device,
@@ -37,17 +35,28 @@ export function SensorNode({
 
   const pulseRef = useRef<Konva.Circle>(null);
   const glowRef = useRef<Konva.Circle>(null);
+  const pathRef = useRef<Konva.Path>(null);
   const animRef = useRef<Konva.Animation | null>(null);
   const glowAnim = useRef<Konva.Animation | null>(null);
+  const popAnim = useRef<Konva.Animation | null>(null);
   const longTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didLong = useRef(false);
   const dragMoved = useRef(false);
+  const prevStatus = useRef(device.status);
 
-  // Sizes compensated for zoom so icons stay constant screen-size
-  const R = (14 * scale) / stageZoom;
-  const PULSE_MAX = (26 * scale) / stageZoom;
-  const PULSE_MIN = R + (3 * scale) / stageZoom;
-  const ICON_S = (R * 1.1) / 12; // scale factor: Lucide 24→ fit in R*1.1 radius
+  const iconPath = cfg.iconPaths[device.status] ?? cfg.iconPaths._default;
+
+  // ── Sizes — all derived from R, compensated for zoom
+  const R = (8 * scale) / stageZoom; // ← badge radius (smaller)
+  const PULSE_MAX = (16 * scale) / stageZoom;
+  const PULSE_MIN = R + (2 * scale) / stageZoom;
+
+  // Icon scaling: Lucide viewBox is 0 0 24 24, center at 12,12
+  // We want the icon to fill ~80% of the badge diameter (2R * 0.8)
+  const ICON_SIZE = R * 1.5; // desired rendered size in canvas units
+  const ICON_S = ICON_SIZE / 24; // scale factor applied to the Path
+  const ICON_X = -(ICON_SIZE / 2); // offset to center the 24x24 viewBox
+  const ICON_Y = -(ICON_SIZE / 2);
 
   const isAlert =
     (device.kind === "door" && device.status === "open") ||
@@ -55,7 +64,7 @@ export function SensorNode({
 
   const activeColor = isAlert ? cfg.alertColor : cfg.color;
 
-  // ── Pulse animation (ring expanding)
+  // ── Pulse animation
   useEffect(() => {
     const node = pulseRef.current;
     if (!node) return;
@@ -66,13 +75,13 @@ export function SensorNode({
       animRef.current = new Konva.Animation((frame) => {
         if (!frame) return;
         const r = node.radius();
-        const speed = (0.025 * scale) / stageZoom;
+        const speed = (0.02 * scale) / stageZoom;
         if (growing) {
           node.radius(Math.min(r + speed * frame.timeDiff, PULSE_MAX));
           node.opacity(
             Math.max(
               0.05,
-              0.55 - ((r - PULSE_MIN) / (PULSE_MAX - PULSE_MIN)) * 0.5,
+              0.5 - ((r - PULSE_MIN) / (PULSE_MAX - PULSE_MIN)) * 0.45,
             ),
           );
           if (r >= PULSE_MAX) growing = false;
@@ -92,7 +101,7 @@ export function SensorNode({
     };
   }, [isAlert, PULSE_MIN, PULSE_MAX, scale, stageZoom]);
 
-  // ── Radial glow animation (sensor alert only — "glass break" style)
+  // ── Radial glow (sensor alert only)
   useEffect(() => {
     const node = glowRef.current;
     if (!node) return;
@@ -103,7 +112,7 @@ export function SensorNode({
       glowAnim.current = new Konva.Animation((frame) => {
         if (!frame) return;
         t += frame.timeDiff / 900;
-        const wave = (Math.sin(t * Math.PI * 2) + 1) / 2; // 0..1
+        const wave = (Math.sin(t * Math.PI * 2) + 1) / 2;
         node.radius(R * (1.4 + wave * 2.2));
         node.opacity(0.18 * (1 - wave * 0.7));
       }, node.getLayer());
@@ -117,7 +126,44 @@ export function SensorNode({
     };
   }, [device.kind, isAlert, R]);
 
-  // ── Long press detection
+  // ── Pop animation when status changes
+  useEffect(() => {
+    if (prevStatus.current === device.status) return;
+    prevStatus.current = device.status;
+
+    const node = pathRef.current;
+    if (!node) return;
+    popAnim.current?.stop();
+
+    let elapsed = 0;
+    const duration = 280;
+    popAnim.current = new Konva.Animation((frame) => {
+      if (!frame) return;
+      elapsed += frame.timeDiff;
+      const t = Math.min(elapsed / duration, 1);
+      const s =
+        t < 0.5
+          ? ICON_S * (1 + 0.35 * Math.sin(t * Math.PI * 2))
+          : ICON_S * (1 + 0.08 * Math.sin(t * Math.PI * 4) * (1 - t));
+      node.scaleX(s);
+      node.scaleY(s);
+      node.x(-(ICON_SIZE / 2) * (s / ICON_S));
+      node.y(-(ICON_SIZE / 2) * (s / ICON_S));
+      if (elapsed >= duration) {
+        node.scaleX(ICON_S);
+        node.scaleY(ICON_S);
+        node.x(ICON_X);
+        node.y(ICON_Y);
+        popAnim.current?.stop();
+      }
+    }, node.getLayer());
+    popAnim.current.start();
+    return () => {
+      popAnim.current?.stop();
+    };
+  }, [device.status, ICON_S, ICON_SIZE, ICON_X, ICON_Y]);
+
+  // ── Long press
   const startLong = useCallback(
     (screenX: number, screenY: number) => {
       didLong.current = false;
@@ -173,7 +219,7 @@ export function SensorNode({
         cancelLong();
       }}
     >
-      {/* Radial glow — sensor alert only */}
+      {/* Radial glow */}
       <Circle
         ref={glowRef}
         radius={0}
@@ -182,7 +228,7 @@ export function SensorNode({
         listening={false}
       />
 
-      {/* Expanding pulse ring */}
+      {/* Pulse ring */}
       <Circle
         ref={pulseRef}
         radius={PULSE_MIN}
@@ -194,48 +240,49 @@ export function SensorNode({
       {/* Selection ring */}
       {isSelected && (
         <Circle
-          radius={R + 4 / stageZoom}
+          radius={R + 3 / stageZoom}
           fill="transparent"
           stroke="#ffffff"
-          strokeWidth={1.5 / stageZoom}
-          dash={[4 / stageZoom, 3 / stageZoom]}
+          strokeWidth={1.2 / stageZoom}
+          dash={[3 / stageZoom, 2.5 / stageZoom]}
           listening={false}
         />
       )}
 
-      {/* Main badge circle */}
+      {/* Badge */}
       <Circle
         radius={R}
         fill={activeColor}
         stroke={isSelected ? "#ffffff" : activeColor + "88"}
-        strokeWidth={1.5 / stageZoom}
+        strokeWidth={1.2 / stageZoom}
       />
 
-      {/* ── Icon rendered via SVG Path data ── */}
+      {/* Icon — SVG path scaled + centered */}
       <Path
-        data={cfg.iconPath}
-        stroke="#ffffff"
-        strokeWidth={1.8 / (stageZoom * ICON_S)}
-        fill="none"
+        ref={pathRef}
+        data={iconPath}
+        stroke="#000000"
+        strokeWidth={2 / ICON_S}
+        fill="transparent"
         strokeLinecap="round"
         strokeLinejoin="round"
         scaleX={ICON_S}
         scaleY={ICON_S}
-        x={ICON_OFFSET * ICON_S}
-        y={ICON_OFFSET * ICON_S}
+        x={ICON_X}
+        y={ICON_Y}
         listening={false}
-        opacity={0.92}
+        opacity={0.95}
       />
 
-      {/* Door "open" sweep arc indicator */}
+      {/* Door open arc indicator */}
       {device.kind === "door" && device.status === "open" && (
         <Arc
-          innerRadius={R * 0.55}
-          outerRadius={R * 0.55 + 1.5 / stageZoom}
-          angle={80}
-          rotation={-100}
+          innerRadius={R * 0.6}
+          outerRadius={R * 0.6 + 1.2 / stageZoom}
+          angle={75}
+          rotation={-105}
           stroke="#ff9f43"
-          strokeWidth={1.5 / stageZoom}
+          strokeWidth={1.2 / stageZoom}
           fill="transparent"
           listening={false}
           opacity={0.7}

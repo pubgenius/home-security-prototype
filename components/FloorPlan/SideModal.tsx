@@ -50,6 +50,8 @@ export function SideModal({
         display: "flex",
         alignItems: "stretch",
         justifyContent: "flex-end",
+        width: "100%",
+        height: "100vh",
       }}
     >
       <div
@@ -101,7 +103,7 @@ export function SideModal({
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
-                <path d={cfg.iconPath} />
+                <path d={cfg.iconPaths._default} />
               </svg>
             </div>
             <div>
@@ -185,11 +187,11 @@ export function SideModal({
               >
                 {device.kind === "door"
                   ? device.status === "open"
-                    ? "A porta está aberta"
-                    : "A porta está fechada e travada"
+                    ? "The lock is open"
+                    : "The lock is closed and locked"
                   : device.status === "alert"
-                    ? "Anomalia detectada no sensor"
-                    : "Sensor operando normalmente"}
+                    ? "Anomaly detected in the sensor"
+                    : "Sensor operating normally"}
               </div>
             </div>
           </div>
@@ -204,7 +206,7 @@ export function SideModal({
               marginBottom: "10px",
             }}
           >
-            {device.kind === "door" ? "Controle da porta" : "Status do sensor"}
+            {device.kind === "door" ? "Lock control" : "Sensor Status"}
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -251,21 +253,6 @@ export function SideModal({
                   >
                     {s.label}
                   </span>
-                  {isCurrentStatus && (
-                    <span
-                      style={{
-                        marginLeft: "auto",
-                        fontSize: "10px",
-                        color: s.color,
-                        background: s.color + "18",
-                        border: `1px solid ${s.color}33`,
-                        borderRadius: "6px",
-                        padding: "1px 7px",
-                      }}
-                    >
-                      Atual
-                    </span>
-                  )}
                 </button>
               );
             })}
@@ -291,9 +278,9 @@ export function SideModal({
           >
             {[
               { label: "ID", value: device.id.split("-")[1] ?? device.id },
-              { label: "Tipo", value: cfg.label },
-              { label: "Posição X", value: Math.round(device.x).toString() },
-              { label: "Posição Y", value: Math.round(device.y).toString() },
+              { label: "Type", value: cfg.label },
+              { label: "Position X", value: Math.round(device.x).toString() },
+              { label: "Position Y", value: Math.round(device.y).toString() },
             ].map((item) => (
               <div
                 key={item.label}
@@ -354,7 +341,7 @@ export function SideModal({
               e.currentTarget.style.color = "#ff6b6b88";
             }}
           >
-            Remover dispositivo
+            Remove device
           </button>
         </div>
       </div>
