@@ -5,7 +5,13 @@ import { Stage, Layer, Rect, Text } from "react-konva";
 import type Konva from "konva";
 import { SensorNode } from "./SensorNode";
 import { FLOOR_PLANS, COLORS, DEVICE_CONFIGS } from "./constants";
-import type { Device, SensorKind, TooltipState, FloorId } from "./types";
+import type {
+  Device,
+  SensorKind,
+  TooltipState,
+  FloorId,
+  DeviceStatus,
+} from "./types";
 
 interface FloorPlanStageProps {
   width: number;
@@ -20,6 +26,7 @@ interface FloorPlanStageProps {
   onDeviceDragEnd: (id: string, x: number, y: number) => void;
   onTooltipChange: (tooltip: TooltipState | null) => void;
   onLongPress: (device: Device, screenX: number, screenY: number) => void;
+  onToggleStatus: (id: string, status: DeviceStatus) => void;
 }
 
 const ZOOM_MIN = 0.5;
@@ -40,6 +47,7 @@ export function FloorPlanStage({
   onDeviceDragEnd,
   onTooltipChange,
   onLongPress,
+  onToggleStatus,
 }: FloorPlanStageProps) {
   const stageRef = useRef<Konva.Stage>(null);
   const [zoom, setZoom] = useState(1);
@@ -278,6 +286,15 @@ export function FloorPlanStage({
           {/* Floor title */}
           <Text
             x={60 * scale}
+            y={20 * scale}
+            text="1445 Greenleaf"
+            fontSize={12 * scale}
+            fontStyle="500"
+            fill={COLORS.textPrimary}
+            listening={false}
+          />
+          <Text
+            x={60 * scale}
             y={31 * scale}
             text={floor.label.toUpperCase()}
             fontSize={7 * scale}
@@ -313,6 +330,7 @@ export function FloorPlanStage({
               }}
               onMouseLeave={() => onTooltipChange(null)}
               onLongPress={onLongPress}
+              onToggleStatus={onToggleStatus}
             />
           ))}
         </Layer>

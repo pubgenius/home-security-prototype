@@ -3,7 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { FloatingToolbar } from "./Toolbar";
 import { FloorPlanStage } from "./FloorPlanStage";
-import { SideModal } from "./SideModal";
+
 import { COLORS, STAGE_W, STAGE_H } from "./constants";
 import type {
   Device,
@@ -38,7 +38,6 @@ export function FloorPlan() {
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
   const [activeFloor, setActiveFloor] = useState<FloorId>("first");
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
-  const [sideModal, setSideModal] = useState<Device | null>(null);
 
   const handleDeviceAdd = useCallback(
     (d: Device) => setDevices((p) => [...p, d]),
@@ -53,34 +52,18 @@ export function FloorPlan() {
       setDevices((p) => p.map((d) => (d.id === id ? { ...d, x, y } : d))),
     [],
   );
-  const handleRemove = useCallback((id: string) => {
-    setDevices((p) => p.filter((d) => d.id !== id));
-    setSelectedDevice((p) => (p === id ? null : p));
-    setTooltip(null);
-    setSideModal((m) => (m?.id === id ? null : m));
-  }, []);
+
   const handleStatusChange = useCallback((id: string, status: DeviceStatus) => {
     setDevices((p) => p.map((d) => (d.id === id ? { ...d, status } : d)));
-    setSideModal((m) => (m && m.id === id ? { ...m, status } : m));
   }, []);
   const handleClearAll = useCallback(() => {
     setDevices([]);
     setSelectedDevice(null);
     setTooltip(null);
-    setSideModal(null);
   }, []);
-  const handleLongPress = useCallback((device: Device) => {
-    setSideModal(device);
+  const handleLongPress = useCallback(() => {
     setTooltip(null);
   }, []);
-
-  // Keep sideModal in sync with device state
-  useEffect(() => {
-    if (!sideModal) return;
-    const live = devices.find((d) => d.id === sideModal.id);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (live) setSideModal(live);
-  }, [devices, sideModal?.id]);
 
   return (
     <div
@@ -121,11 +104,11 @@ export function FloorPlan() {
             onDeviceDragEnd={handleDragEnd}
             onTooltipChange={setTooltip}
             onLongPress={handleLongPress}
+            onToggleStatus={handleStatusChange}
           />
         )}
 
-        {/* Tooltip */}
-        {tooltip && !sideModal && (
+        {tooltip && (
           <div
             style={{
               position: "absolute",
@@ -146,16 +129,6 @@ export function FloorPlan() {
           >
             {tooltip.label}
           </div>
-        )}
-
-        {/* Side modal — rendered inside canvas container so it overlays the map */}
-        {sideModal && (
-          <SideModal
-            device={sideModal}
-            onClose={() => setSideModal(null)}
-            onStatusChange={handleStatusChange}
-            onRemove={handleRemove}
-          />
         )}
       </div>
     </div>
