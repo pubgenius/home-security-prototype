@@ -3,6 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { FloatingToolbar } from "./Toolbar";
 import { FloorPlanStage } from "./FloorPlanStage";
+import { SideModal } from "./SideModal";
 import { COLORS, STAGE_W, STAGE_H } from "./constants";
 import type {
   Device,
@@ -18,7 +19,6 @@ function useContainerSize(ref: React.RefObject<HTMLDivElement | null>) {
     if (!ref.current) return;
     const ro = new ResizeObserver((entries) => {
       const { width, height } = entries[0].contentRect;
-      // Use the real container dimensions — no forced aspect ratio
       setSize({ width: Math.floor(width), height: Math.floor(height) });
     });
     ro.observe(ref.current);
@@ -39,10 +39,11 @@ export function FloorPlan() {
   const scale = width > 0 && height > 0 ? fitScale(width, height) : 1;
 
   const [devices, setDevices] = useState<Device[]>([]);
-  const [selectedKind, setSelectedKind] = useState<SensorKind>("door");
+  const [selectedKind, setSelectedKind] = useState<SensorKind>("lock");
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
   const [activeFloor, setActiveFloor] = useState<FloorId>("first");
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+  const [sideModal, setSideModal] = useState<Device | null>(null);
 
   const handleDeviceAdd = useCallback(
     (d: Device) => setDevices((p) => [...p, d]),
@@ -57,18 +58,34 @@ export function FloorPlan() {
       setDevices((p) => p.map((d) => (d.id === id ? { ...d, x, y } : d))),
     [],
   );
-
+  const handleRemove = useCallback((id: string) => {
+    setDevices((p) => p.filter((d) => d.id !== id));
+    setSelectedDevice((p) => (p === id ? null : p));
+    setTooltip(null);
+    setSideModal((m) => (m?.id === id ? null : m));
+  }, []);
   const handleStatusChange = useCallback((id: string, status: DeviceStatus) => {
     setDevices((p) => p.map((d) => (d.id === id ? { ...d, status } : d)));
+    setSideModal((m) => (m?.id === id ? { ...m, status } : m));
   }, []);
   const handleClearAll = useCallback(() => {
     setDevices([]);
     setSelectedDevice(null);
     setTooltip(null);
+    setSideModal(null);
   }, []);
-  const handleLongPress = useCallback(() => {
+  const handleLongPress = useCallback((device: Device) => {
+    setSideModal(device);
     setTooltip(null);
   }, []);
+
+  useEffect(() => {
+    if (!sideModal) return;
+    const live = devices.find((d) => d.id === sideModal.id);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (live) setSideModal(live);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [devices, sideModal?.id]);
 
   return (
     <div
@@ -109,11 +126,10 @@ export function FloorPlan() {
             onDeviceDragEnd={handleDragEnd}
             onTooltipChange={setTooltip}
             onLongPress={handleLongPress}
-            onToggleStatus={handleStatusChange}
           />
         )}
 
-        {tooltip && (
+        {tooltip && !sideModal && (
           <div
             style={{
               position: "absolute",
@@ -135,6 +151,15 @@ export function FloorPlan() {
           >
             {tooltip.label}
           </div>
+        )}
+
+        {sideModal && (
+          <SideModal
+            device={sideModal}
+            onClose={() => setSideModal(null)}
+            onStatusChange={handleStatusChange}
+            onRemove={handleRemove}
+          />
         )}
       </div>
     </div>

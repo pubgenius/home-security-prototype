@@ -1,4 +1,4 @@
-export type SensorKind = "door" | "sensor";
+export type SensorKind = "lock" | "sensor";
 export type DoorStatus = "closed" | "open";
 export type SensorStatus = "ok" | "alert";
 export type DeviceStatus = DoorStatus | SensorStatus;

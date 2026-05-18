@@ -44,6 +44,7 @@ export function FloatingToolbar({
   const isMobile = useIsMobile();
   const isTouch = useIsTouch();
 
+  // On mobile: floor label shortened
   const floorLabel = (label: string) =>
     isMobile ? label.replace("First ", "1F ").replace("Second ", "2F ") : label;
 
@@ -69,9 +70,11 @@ export function FloatingToolbar({
         userSelect: "none",
         WebkitUserSelect: "none",
         maxWidth: "calc(100vw - 24px)",
+        // Prevent long-press context menu on touch
         WebkitTouchCallout: "none" as React.CSSProperties["WebkitTouchCallout"],
       }}
     >
+      {/* Floor switcher */}
       <div
         style={{
           display: "flex",
@@ -102,6 +105,7 @@ export function FloatingToolbar({
                 fontWeight: isActive ? 500 : 400,
                 transition: "all 0.15s",
                 outline: "none",
+                // Minimum 44px touch target height via padding
                 minHeight: "36px",
                 whiteSpace: "nowrap",
               }}
@@ -112,6 +116,7 @@ export function FloatingToolbar({
         })}
       </div>
 
+      {/* Separator */}
       <div
         style={{
           width: "1px",
@@ -121,6 +126,7 @@ export function FloatingToolbar({
         }}
       />
 
+      {/* Device kind selector */}
       <div style={{ display: "flex", gap: "2px", padding: "2px" }}>
         {(
           Object.entries(DEVICE_CONFIGS) as [
@@ -173,6 +179,7 @@ export function FloatingToolbar({
         })}
       </div>
 
+      {/* Clear — only when there are devices */}
       {deviceCount > 0 && (
         <>
           <div

@@ -3,7 +3,7 @@
 import React, { useRef, useEffect, useCallback } from "react";
 import { Group, Circle, Path, Arc } from "react-konva";
 import Konva from "konva";
-import type { Device, DeviceStatus } from "./types";
+import type { Device } from "./types";
 import { DEVICE_CONFIGS } from "./constants";
 
 interface SensorNodeProps {
@@ -16,7 +16,6 @@ interface SensorNodeProps {
   onMouseEnter: (device: Device, x: number, y: number) => void;
   onMouseLeave: () => void;
   onLongPress: (device: Device, x: number, y: number) => void;
-  onToggleStatus: (id: string, status: DeviceStatus) => void;
 }
 
 const LONG_PRESS_MS = 500;
@@ -31,7 +30,6 @@ export function SensorNode({
   onMouseEnter,
   onMouseLeave,
   onLongPress,
-  onToggleStatus,
 }: SensorNodeProps) {
   const cfg = DEVICE_CONFIGS[device.kind];
 
@@ -61,7 +59,7 @@ export function SensorNode({
   const ICON_Y = -(ICON_SIZE / 2);
 
   const isAlert =
-    (device.kind === "door" && device.status === "open") ||
+    (device.kind === "lock" && device.status === "open") ||
     (device.kind === "sensor" && device.status === "alert");
 
   const activeColor = isAlert ? cfg.alertColor : cfg.color;
@@ -165,7 +163,6 @@ export function SensorNode({
     };
   }, [device.status, ICON_S, ICON_SIZE, ICON_X, ICON_Y]);
 
-  // ── Long press
   const startLong = useCallback(
     (screenX: number, screenY: number) => {
       didLong.current = false;
@@ -173,21 +170,10 @@ export function SensorNode({
       longTimer.current = setTimeout(() => {
         didLong.current = true;
 
-        // Toggle status immediately on long press
-        const nextStatus: DeviceStatus =
-          device.kind === "door"
-            ? device.status === "closed"
-              ? "open"
-              : "closed"
-            : device.status === "ok"
-              ? "alert"
-              : "ok";
-
-        onToggleStatus(device.id, nextStatus);
         onLongPress(device, screenX, screenY);
       }, LONG_PRESS_MS);
     },
-    [device, onLongPress, onToggleStatus],
+    [device, onLongPress],
   );
 
   const cancelLong = useCallback(() => {
@@ -233,7 +219,6 @@ export function SensorNode({
         cancelLong();
       }}
     >
-      {/* Radial glow */}
       <Circle
         ref={glowRef}
         radius={0}
@@ -242,7 +227,6 @@ export function SensorNode({
         listening={false}
       />
 
-      {/* Pulse ring */}
       <Circle
         ref={pulseRef}
         radius={PULSE_MIN}
@@ -251,7 +235,6 @@ export function SensorNode({
         listening={false}
       />
 
-      {/* Selection ring */}
       {isSelected && (
         <Circle
           radius={R + 3 / stageZoom}
@@ -263,7 +246,6 @@ export function SensorNode({
         />
       )}
 
-      {/* Badge */}
       <Circle
         radius={R}
         fill={activeColor}
@@ -271,7 +253,6 @@ export function SensorNode({
         strokeWidth={1.2 / stageZoom}
       />
 
-      {/* Icon — SVG path scaled + centered */}
       <Path
         ref={pathRef}
         data={iconPath}
@@ -288,8 +269,7 @@ export function SensorNode({
         opacity={0.95}
       />
 
-      {/* Door open arc indicator */}
-      {device.kind === "door" && device.status === "open" && (
+      {device.kind === "lock" && device.status === "open" && (
         <Arc
           innerRadius={R * 0.6}
           outerRadius={R * 0.6 + 1.2 / stageZoom}

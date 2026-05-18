@@ -18,8 +18,8 @@ const CHECK_ALERT =
   "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M15 9l-6 6 M9 9l6 6";
 
 export const DEVICE_CONFIGS: Record<SensorKind, DeviceConfig> = {
-  door: {
-    kind: "door",
+  lock: {
+    kind: "lock",
     color: "#51cf66",
     alertColor: "#ff6b6b",
     label: "Lock",

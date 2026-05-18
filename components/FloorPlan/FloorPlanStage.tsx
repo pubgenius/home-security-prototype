@@ -11,13 +11,7 @@ import {
   STAGE_H,
   DEVICE_CONFIGS,
 } from "./constants";
-import type {
-  Device,
-  SensorKind,
-  TooltipState,
-  FloorId,
-  DeviceStatus,
-} from "./types";
+import type { Device, SensorKind, TooltipState, FloorId } from "./types";
 
 interface FloorPlanStageProps {
   width: number;
@@ -32,7 +26,6 @@ interface FloorPlanStageProps {
   onDeviceDragEnd: (id: string, x: number, y: number) => void;
   onTooltipChange: (tooltip: TooltipState | null) => void;
   onLongPress: (device: Device, screenX: number, screenY: number) => void;
-  onToggleStatus: (id: string, status: DeviceStatus) => void;
 }
 
 const ZOOM_MIN = 0.5;
@@ -53,7 +46,6 @@ export function FloorPlanStage({
   onDeviceDragEnd,
   onTooltipChange,
   onLongPress,
-  onToggleStatus,
 }: FloorPlanStageProps) {
   const stageRef = useRef<Konva.Stage>(null);
   const [zoom, setZoom] = useState(1);
@@ -338,7 +330,7 @@ export function FloorPlanStage({
               onMouseEnter={(d) => {
                 const cfg = DEVICE_CONFIGS[d.kind];
                 const isAlert =
-                  (d.kind === "door" && d.status === "open") ||
+                  (d.kind === "lock" && d.status === "open") ||
                   (d.kind === "sensor" && d.status === "alert");
                 onTooltipChange({
                   x: d.x * zoom + pos.x,
@@ -350,7 +342,6 @@ export function FloorPlanStage({
               }}
               onMouseLeave={() => onTooltipChange(null)}
               onLongPress={onLongPress}
-              onToggleStatus={onToggleStatus}
             />
           ))}
         </Layer>
