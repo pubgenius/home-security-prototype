@@ -3,7 +3,7 @@
 import { useRef, useEffect, useCallback } from "react";
 import { Group, Circle, Path, Arc } from "react-konva";
 import Konva from "konva";
-import type { Device, DeviceStatus } from "./types";
+import type { Device } from "./types";
 import { DEVICE_CONFIGS } from "./constants";
 
 interface SensorNodeProps {

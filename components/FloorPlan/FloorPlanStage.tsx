@@ -319,15 +319,6 @@ export function FloorPlanStage({
 
           <Text
             x={60 * scale}
-            y={20 * scale}
-            text="1445 Greenleaf"
-            fontSize={12 * scale}
-            fontStyle="500"
-            fill={COLORS.textPrimary}
-            listening={false}
-          />
-          <Text
-            x={60 * scale}
             y={31 * scale}
             text={floor.label.toUpperCase()}
             fontSize={7 * scale}
