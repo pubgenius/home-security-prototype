@@ -1,19 +1,13 @@
 import type { DeviceConfig, SensorKind, FloorPlanDef } from "./types";
 
-// All paths: viewBox 0 0 24 24, stroke-based, Lucide-style
-
-// Door closed = locked padlock
 const LOCK_CLOSED =
   "M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z M7 11V7a5 5 0 0 1 10 0v4";
 
-// Door open = unlocked padlock (shackle open on right)
 const LOCK_OPEN =
   "M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z M17 11V7a5 5 0 0 0-9.9-1";
 
-// Sensor ok = circle-check
 const CHECK_OK = "M20 6 9 17l-5-5";
 
-// Sensor alert = circle-x (something wrong)
 const CHECK_ALERT =
   "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M15 9l-6 6 M9 9l6 6";
 
@@ -21,7 +15,7 @@ export const DEVICE_CONFIGS: Record<SensorKind, DeviceConfig> = {
   lock: {
     kind: "lock",
     color: "#51cf66",
-    alertColor: "#ff6b6b",
+    alertColor: "#ff9f43",
     label: "Lock",
     iconPaths: {
       _default: LOCK_CLOSED,
@@ -172,3 +166,58 @@ export const FLOOR_PLANS: FloorPlanDef[] = [
 
 export const STAGE_W = 640;
 export const STAGE_H = 440;
+
+// ─── SIMULATION EVENTS ───────────────────────────────────────────────────────
+import type { SimulationEvent } from "./types";
+
+export const SIMULATION_EVENTS: SimulationEvent[] = [
+  {
+    id: "glass-break",
+    label: "Glass break",
+    description: "Simulates impact detection on a window",
+    iconPath: "M12 2L2 19h20L12 2z M12 9v4 M12 16h.01",
+    targetKind: "sensor",
+    triggersStatus: "alert",
+    color: "#ff6b6b",
+  },
+  {
+    id: "motion-detected",
+    label: "Motion detected",
+    description: "Simulates presence detected in the area",
+    iconPath:
+      "M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z M12 9h.01",
+    targetKind: "sensor",
+    triggersStatus: "alert",
+    color: "#ffd43b",
+  },
+  {
+    id: "door-forced",
+    label: "Forced entry",
+    description: "Simulates forced opening of a door/window",
+    iconPath:
+      "M18 8h1a4 4 0 0 1 0 8h-1 M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z M6 1v3 M10 1v3 M14 1v3",
+    targetKind: "lock",
+    triggersStatus: "open",
+    color: "#ff9f43",
+  },
+  {
+    id: "door-reset",
+    label: "Reset doors",
+    description: "Closes and locks all doors",
+    iconPath:
+      "M6 12h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2z M8 12V8a4 4 0 0 1 8 0v4",
+    targetKind: "lock",
+    triggersStatus: "closed",
+    color: "#51cf66",
+  },
+  {
+    id: "sensor-reset",
+    label: "Reset sensors",
+    description: "Clears all sensor alerts",
+    iconPath:
+      "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M9 12l2 2 4-4",
+    targetKind: "sensor",
+    triggersStatus: "ok",
+    color: "#4a9eff",
+  },
+];

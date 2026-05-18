@@ -4,6 +4,7 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 import { FloatingToolbar } from "./Toolbar";
 import { FloorPlanStage } from "./FloorPlanStage";
 import { SideModal } from "./SideModal";
+import { ToastContainer } from "./Toast";
 import { COLORS, STAGE_W, STAGE_H } from "./constants";
 import type {
   Device,
@@ -11,6 +12,8 @@ import type {
   DeviceStatus,
   TooltipState,
   FloorId,
+  ToastState,
+  SimulationEvent,
 } from "./types";
 
 function useContainerSize(ref: React.RefObject<HTMLDivElement | null>) {
@@ -44,6 +47,8 @@ export function FloorPlan() {
   const [activeFloor, setActiveFloor] = useState<FloorId>("first");
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const [sideModal, setSideModal] = useState<Device | null>(null);
+  const [toasts, setToasts] = useState<ToastState[]>([]);
+  const toastIdRef = useRef(0);
 
   const handleDeviceAdd = useCallback(
     (d: Device) => setDevices((p) => [...p, d]),
@@ -64,21 +69,74 @@ export function FloorPlan() {
     setTooltip(null);
     setSideModal((m) => (m?.id === id ? null : m));
   }, []);
+
   const handleStatusChange = useCallback((id: string, status: DeviceStatus) => {
     setDevices((p) => p.map((d) => (d.id === id ? { ...d, status } : d)));
     setSideModal((m) => (m?.id === id ? { ...m, status } : m));
   }, []);
+
   const handleClearAll = useCallback(() => {
     setDevices([]);
     setSelectedDevice(null);
     setTooltip(null);
     setSideModal(null);
   }, []);
+
   const handleLongPress = useCallback((device: Device) => {
     setSideModal(device);
     setTooltip(null);
   }, []);
 
+  const dismissToast = useCallback((id: number) => {
+    setToasts((p) => p.filter((t) => t.id !== id));
+  }, []);
+
+  const handleSimulate = useCallback(
+    (event: SimulationEvent) => {
+      setDevices((prev) => {
+        const targets = prev.filter(
+          (d) => d.floorId === activeFloor && d.kind === event.targetKind,
+        );
+
+        if (targets.length === 0) {
+          const id = ++toastIdRef.current;
+          setToasts(() => [
+            {
+              id,
+              message: `No ${event.targetKind === "lock" ? "doors" : "sensors"} on this floor`,
+              subtext: "Add devices before simulating",
+              color: "#6b738f",
+              iconPath:
+                "M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z",
+            },
+          ]);
+          return prev;
+        }
+
+        const updated = prev.map((d) =>
+          targets.find((t) => t.id === d.id)
+            ? { ...d, status: event.triggersStatus }
+            : d,
+        );
+
+        const id = ++toastIdRef.current;
+        setToasts(() => [
+          {
+            id,
+            message: event.label,
+            subtext: `${targets.length} device${targets.length !== 1 ? "s" : ""} affected`,
+            color: event.color,
+            iconPath: event.iconPath,
+          },
+        ]);
+
+        return updated;
+      });
+    },
+    [activeFloor],
+  );
+
+  // Keep sideModal in sync with live device state
   useEffect(() => {
     if (!sideModal) return;
     const live = devices.find((d) => d.id === sideModal.id);
@@ -110,6 +168,7 @@ export function FloorPlan() {
           onFloorChange={setActiveFloor}
           onClearAll={handleClearAll}
           deviceCount={devices.length}
+          onSimulate={handleSimulate}
         />
 
         {width > 0 && (
@@ -161,6 +220,8 @@ export function FloorPlan() {
             onRemove={handleRemove}
           />
         )}
+
+        <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       </div>
     </div>
   );
