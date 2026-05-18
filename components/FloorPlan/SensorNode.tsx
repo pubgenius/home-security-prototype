@@ -47,13 +47,15 @@ export function SensorNode({
   // ── Sizes — all derived from R, compensated for zoom
   // Fixed screen-pixel size — same on desktop and mobile regardless of scale/zoom.
   // Dividing by stageZoom converts screen-px → Konva world-units (zoom is applied on top).
+  const zoomFactor = Math.pow(stageZoom, 0.5);
+
   const SCREEN_R = 14;
-  const R = SCREEN_R / stageZoom;
-  const PULSE_MAX = (SCREEN_R * 2.2) / stageZoom;
-  const PULSE_MIN = R + 3 / stageZoom;
+  const R = SCREEN_R / zoomFactor;
+  const PULSE_MAX = (SCREEN_R * 2.2) / zoomFactor;
+  const PULSE_MIN = R + 3 / zoomFactor;
 
   // Icon: fill ~80% of badge diameter in screen pixels
-  const ICON_SIZE = (SCREEN_R * 1.6) / stageZoom;
+  const ICON_SIZE = (SCREEN_R * 1.6) / zoomFactor;
   const ICON_S = ICON_SIZE / 24;
   const ICON_X = -(ICON_SIZE / 2);
   const ICON_Y = -(ICON_SIZE / 2);
@@ -75,7 +77,7 @@ export function SensorNode({
       animRef.current = new Konva.Animation((frame) => {
         if (!frame) return;
         const r = node.radius();
-        const speed = 0.02 / stageZoom;
+        const speed = 0.02 / zoomFactor;
         if (growing) {
           node.radius(Math.min(r + speed * frame.timeDiff, PULSE_MAX));
           node.opacity(
@@ -99,7 +101,7 @@ export function SensorNode({
     return () => {
       animRef.current?.stop();
     };
-  }, [isAlert, PULSE_MIN, PULSE_MAX, stageZoom]);
+  }, [isAlert, PULSE_MIN, PULSE_MAX, zoomFactor]);
 
   useEffect(() => {
     const node = glowRef.current;
@@ -235,11 +237,11 @@ export function SensorNode({
 
       {isSelected && (
         <Circle
-          radius={R + 3 / stageZoom}
+          radius={R + 3 / zoomFactor}
           fill="transparent"
           stroke="#ffffff"
-          strokeWidth={1.2 / stageZoom}
-          dash={[3 / stageZoom, 2.5 / stageZoom]}
+          strokeWidth={1.2 / zoomFactor}
+          dash={[3 / zoomFactor, 2.5 / zoomFactor]}
           listening={false}
         />
       )}
@@ -248,7 +250,7 @@ export function SensorNode({
         radius={R}
         fill={activeColor}
         stroke={isSelected ? "#ffffff" : activeColor + "88"}
-        strokeWidth={1.2 / stageZoom}
+        strokeWidth={1.2 / zoomFactor}
       />
 
       <Path
@@ -270,11 +272,11 @@ export function SensorNode({
       {device.kind === "lock" && device.status === "open" && (
         <Arc
           innerRadius={R * 0.6}
-          outerRadius={R * 0.6 + 1.2 / stageZoom}
+          outerRadius={R * 0.6 + 1.2 / zoomFactor}
           angle={75}
           rotation={-105}
           stroke="#ff9f43"
-          strokeWidth={1.2 / stageZoom}
+          strokeWidth={1.2 / zoomFactor}
           fill="transparent"
           listening={false}
           opacity={0.7}

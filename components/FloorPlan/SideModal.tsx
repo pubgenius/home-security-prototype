@@ -368,7 +368,7 @@ export function SideModal({
                 marginBottom: "10px",
               }}
             >
-              Informations
+              Information
             </div>
             <div
               style={{
