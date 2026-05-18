@@ -1,10 +1,16 @@
 "use client";
 
-import React, { useRef, useCallback, useState } from "react";
+import React, { useRef, useCallback, useState, useEffect } from "react";
 import { Stage, Layer, Rect, Text } from "react-konva";
 import type Konva from "konva";
 import { SensorNode } from "./SensorNode";
-import { FLOOR_PLANS, COLORS, DEVICE_CONFIGS } from "./constants";
+import {
+  FLOOR_PLANS,
+  COLORS,
+  STAGE_W,
+  STAGE_H,
+  DEVICE_CONFIGS,
+} from "./constants";
 import type {
   Device,
   SensorKind,
@@ -56,6 +62,26 @@ export function FloorPlanStage({
 
   const floor = FLOOR_PLANS.find((f) => f.id === activeFloor) ?? FLOOR_PLANS[0];
 
+  // The floor plan content size at scale=1 (rooms go from ~60,40 to ~640,430 world units)
+  // Center it inside the stage on first render and on reset
+  const centeredPos = useCallback(() => {
+    const contentW = STAGE_W * scale;
+    const contentH = STAGE_H * scale;
+    return {
+      x: (width - contentW) / 2,
+      y: (height - contentH) / 2,
+    };
+  }, [width, height, scale]);
+
+  // Set centered position when dimensions first become available
+  const didInit = useRef(false);
+  useEffect(() => {
+    if (width > 0 && height > 0 && !didInit.current) {
+      didInit.current = true;
+      setPos(centeredPos());
+    }
+  }, [width, height, centeredPos]);
+
   const clamp = (z: number) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
 
   const zoomTo = useCallback(
@@ -73,7 +99,6 @@ export function FloorPlanStage({
     [],
   );
 
-  // ── Wheel zoom
   const handleWheel = useCallback(
     (e: Konva.KonvaEventObject<WheelEvent>) => {
       e.evt.preventDefault();
@@ -95,7 +120,6 @@ export function FloorPlanStage({
     [zoom, pos, zoomTo],
   );
 
-  // ── Pinch zoom (touch)
   const lastDist = useRef<number | null>(null);
   const lastCenter = useRef<{ x: number; y: number } | null>(null);
 
@@ -134,7 +158,6 @@ export function FloorPlanStage({
     lastCenter.current = null;
   }, []);
 
-  // ── Pan via stage drag
   const dragStart = useRef<{ x: number; y: number } | null>(null);
   const handleDragStart = useCallback(
     (e: Konva.KonvaEventObject<DragEvent>) => {
@@ -155,7 +178,6 @@ export function FloorPlanStage({
     setTimeout(() => setPanning(false), 60);
   }, []);
 
-  // ── Click to place device
   const handleStageClick = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
       if (isPanning) return;
@@ -204,14 +226,23 @@ export function FloorPlanStage({
 
   const resetView = useCallback(() => {
     setZoom(1);
-    setPos({ x: 0, y: 0 });
-  }, []);
+    setPos(centeredPos());
+  }, [centeredPos]);
 
   const zoomPercent = Math.round(zoom * 100);
   const floorDevices = devices.filter((d) => d.floorId === activeFloor);
 
   return (
-    <div style={{ position: "relative", touchAction: "none" }}>
+    <div
+      style={{
+        position: "relative",
+        touchAction: "none",
+        userSelect: "none",
+        WebkitUserSelect: "none",
+        width: "100%",
+        height: "100%",
+      }}
+    >
       <Stage
         ref={stageRef}
         width={width}
@@ -227,9 +258,9 @@ export function FloorPlanStage({
         onClick={handleStageClick}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        style={{ cursor: "crosshair", display: "block" }}
+        onContextMenu={(e) => e.evt.preventDefault()}
+        style={{ display: "block" }}
       >
-        {/* ── Background layer (never changes) ── */}
         <Layer>
           <Rect
             name="stage-bg"
@@ -240,7 +271,7 @@ export function FloorPlanStage({
             fill={COLORS.stageBg}
             listening={false}
           />
-          {/* Floor outline */}
+
           <Rect
             name="floor-bg"
             x={60 * scale}
@@ -255,7 +286,6 @@ export function FloorPlanStage({
           />
         </Layer>
 
-        {/* ── Room layer ── */}
         <Layer>
           {floor.rooms.map((room) => (
             <React.Fragment key={room.id}>
@@ -283,16 +313,7 @@ export function FloorPlanStage({
               />
             </React.Fragment>
           ))}
-          {/* Floor title */}
-          <Text
-            x={60 * scale}
-            y={20 * scale}
-            text="1445 Greenleaf"
-            fontSize={12 * scale}
-            fontStyle="500"
-            fill={COLORS.textPrimary}
-            listening={false}
-          />
+
           <Text
             x={60 * scale}
             y={31 * scale}
@@ -304,7 +325,6 @@ export function FloorPlanStage({
           />
         </Layer>
 
-        {/* ── Device layer ── */}
         <Layer>
           {floorDevices.map((device) => (
             <SensorNode
@@ -336,7 +356,6 @@ export function FloorPlanStage({
         </Layer>
       </Stage>
 
-      {/* ── Zoom controls ── */}
       <div
         style={{
           position: "absolute",
@@ -356,6 +375,7 @@ export function FloorPlanStage({
             color: COLORS.textMuted,
             fontFamily: "monospace",
             userSelect: "none",
+            WebkitUserSelect: "none",
           }}
         >
           {zoomPercent}%
@@ -403,14 +423,15 @@ function ZBtn({
     <button
       onClick={onClick}
       style={{
-        width: 34,
-        height: 34,
+        // 44×44 minimum touch target (Apple HIG / Material)
+        width: 44,
+        height: 44,
         border: "1px solid #1e2540",
-        borderRadius: 8,
+        borderRadius: 10,
         background: "rgba(13,17,32,0.85)",
         color: "#8a93b0",
         cursor: "pointer",
-        fontSize: 18,
+        fontSize: 20,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -420,6 +441,8 @@ function ZBtn({
         backdropFilter: "blur(8px)",
         WebkitBackdropFilter: "blur(8px)",
         transition: "background 0.15s, color 0.15s",
+        WebkitTouchCallout: "none" as React.CSSProperties["WebkitTouchCallout"],
+        userSelect: "none",
         ...style,
       }}
     >

@@ -3,7 +3,6 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { FloatingToolbar } from "./Toolbar";
 import { FloorPlanStage } from "./FloorPlanStage";
-
 import { COLORS, STAGE_W, STAGE_H } from "./constants";
 import type {
   Device,
@@ -18,9 +17,9 @@ function useContainerSize(ref: React.RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     if (!ref.current) return;
     const ro = new ResizeObserver((entries) => {
-      const w = entries[0].contentRect.width;
-      const h = Math.round(w * (STAGE_H / STAGE_W));
-      setSize({ width: w, height: h });
+      const { width, height } = entries[0].contentRect;
+      // Use the real container dimensions — no forced aspect ratio
+      setSize({ width: Math.floor(width), height: Math.floor(height) });
     });
     ro.observe(ref.current);
     return () => ro.disconnect();
@@ -28,10 +27,16 @@ function useContainerSize(ref: React.RefObject<HTMLDivElement | null>) {
   return size;
 }
 
+function fitScale(stageW: number, stageH: number, padding = 64): number {
+  const scaleX = (stageW - padding) / STAGE_W;
+  const scaleY = (stageH - padding) / STAGE_H;
+  return Math.min(scaleX, scaleY);
+}
+
 export function FloorPlan() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { width, height } = useContainerSize(containerRef);
-  const scale = width / STAGE_W;
+  const scale = width > 0 && height > 0 ? fitScale(width, height) : 1;
 
   const [devices, setDevices] = useState<Device[]>([]);
   const [selectedKind, setSelectedKind] = useState<SensorKind>("door");
@@ -74,9 +79,9 @@ export function FloorPlan() {
         flexDirection: "column",
         height: "100dvh",
         overflow: "hidden",
+        overscrollBehavior: "none",
       }}
     >
-      {/* Canvas area — toolbar floats inside */}
       <div
         ref={containerRef}
         style={{ position: "relative", width: "100%", flex: 1, minHeight: 0 }}
@@ -125,6 +130,7 @@ export function FloorPlan() {
               whiteSpace: "nowrap",
               zIndex: 15,
               backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
             }}
           >
             {tooltip.label}
