@@ -91,6 +91,7 @@ export function FloorPlanStage({
     [],
   );
 
+  // ── Wheel zoom
   const handleWheel = useCallback(
     (e: Konva.KonvaEventObject<WheelEvent>) => {
       e.evt.preventDefault();
@@ -112,6 +113,7 @@ export function FloorPlanStage({
     [zoom, pos, zoomTo],
   );
 
+  // ── Pinch zoom (touch)
   const lastDist = useRef<number | null>(null);
   const lastCenter = useRef<{ x: number; y: number } | null>(null);
 
@@ -150,6 +152,7 @@ export function FloorPlanStage({
     lastCenter.current = null;
   }, []);
 
+  // ── Pan via stage drag
   const dragStart = useRef<{ x: number; y: number } | null>(null);
   const handleDragStart = useCallback(
     (e: Konva.KonvaEventObject<DragEvent>) => {
@@ -164,14 +167,18 @@ export function FloorPlanStage({
     setPos(np);
     const moved =
       dragStart.current &&
-      (Math.abs(np.x - dragStart.current.x) > 3 ||
-        Math.abs(np.y - dragStart.current.y) > 3);
-    if (moved) setPanning(true);
-    setTimeout(() => setPanning(false), 60);
+      (Math.abs(np.x - dragStart.current.x) > 8 ||
+        Math.abs(np.y - dragStart.current.y) > 8);
+    if (moved) {
+      setPanning(true);
+      // 120ms covers both onClick and onTap which fire after touchend
+      setTimeout(() => setPanning(false), 120);
+    }
   }, []);
 
-  const handleStageClick = useCallback(
-    (e: Konva.KonvaEventObject<MouseEvent>) => {
+  // ── Place device — shared by click (mouse) and tap (touch)
+  const placeDevice = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
       if (isPanning) return;
       const isBackground =
         e.target === e.target.getStage() ||
@@ -182,6 +189,9 @@ export function FloorPlanStage({
 
       const stage = stageRef.current;
       if (!stage) return;
+
+      // getRelativePointerPosition works for both mouse and touch
+      // It applies the inverse of scale+position transform automatically
       const p = stage.getRelativePointerPosition();
       if (!p) return;
 
@@ -247,7 +257,8 @@ export function FloorPlanStage({
         onWheel={handleWheel}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        onClick={handleStageClick}
+        onClick={placeDevice}
+        onTap={placeDevice}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onContextMenu={(e) => e.evt.preventDefault()}
@@ -308,6 +319,15 @@ export function FloorPlanStage({
 
           <Text
             x={60 * scale}
+            y={20 * scale}
+            text="1445 Greenleaf"
+            fontSize={12 * scale}
+            fontStyle="500"
+            fill={COLORS.textPrimary}
+            listening={false}
+          />
+          <Text
+            x={60 * scale}
             y={31 * scale}
             text={floor.label.toUpperCase()}
             fontSize={7 * scale}
@@ -322,7 +342,6 @@ export function FloorPlanStage({
             <SensorNode
               key={device.id}
               device={device}
-              scale={scale}
               stageZoom={zoom}
               isSelected={selectedDevice === device.id}
               onSelect={onDeviceSelect}

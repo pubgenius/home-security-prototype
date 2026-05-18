@@ -1,14 +1,13 @@
 "use client";
 
-import React, { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import { Group, Circle, Path, Arc } from "react-konva";
 import Konva from "konva";
-import type { Device } from "./types";
+import type { Device, DeviceStatus } from "./types";
 import { DEVICE_CONFIGS } from "./constants";
 
 interface SensorNodeProps {
   device: Device;
-  scale: number;
   stageZoom: number;
   isSelected: boolean;
   onSelect: (id: string) => void;
@@ -22,7 +21,6 @@ const LONG_PRESS_MS = 500;
 
 export function SensorNode({
   device,
-  scale,
   stageZoom,
   isSelected,
   onSelect,
@@ -47,15 +45,17 @@ export function SensorNode({
   const iconPath = cfg.iconPaths[device.status] ?? cfg.iconPaths._default;
 
   // ── Sizes — all derived from R, compensated for zoom
-  const R = (8 * scale) / stageZoom; // ← badge radius (smaller)
-  const PULSE_MAX = (16 * scale) / stageZoom;
-  const PULSE_MIN = R + (2 * scale) / stageZoom;
+  // Fixed screen-pixel size — same on desktop and mobile regardless of scale/zoom.
+  // Dividing by stageZoom converts screen-px → Konva world-units (zoom is applied on top).
+  const SCREEN_R = 14;
+  const R = SCREEN_R / stageZoom;
+  const PULSE_MAX = (SCREEN_R * 2.2) / stageZoom;
+  const PULSE_MIN = R + 3 / stageZoom;
 
-  // Icon scaling: Lucide viewBox is 0 0 24 24, center at 12,12
-  // We want the icon to fill ~80% of the badge diameter (2R * 0.8)
-  const ICON_SIZE = R * 1.5; // desired rendered size in canvas units
-  const ICON_S = ICON_SIZE / 24; // scale factor applied to the Path
-  const ICON_X = -(ICON_SIZE / 2); // offset to center the 24x24 viewBox
+  // Icon: fill ~80% of badge diameter in screen pixels
+  const ICON_SIZE = (SCREEN_R * 1.6) / stageZoom;
+  const ICON_S = ICON_SIZE / 24;
+  const ICON_X = -(ICON_SIZE / 2);
   const ICON_Y = -(ICON_SIZE / 2);
 
   const isAlert =
@@ -75,7 +75,7 @@ export function SensorNode({
       animRef.current = new Konva.Animation((frame) => {
         if (!frame) return;
         const r = node.radius();
-        const speed = (0.02 * scale) / stageZoom;
+        const speed = 0.02 / stageZoom;
         if (growing) {
           node.radius(Math.min(r + speed * frame.timeDiff, PULSE_MAX));
           node.opacity(
@@ -99,9 +99,8 @@ export function SensorNode({
     return () => {
       animRef.current?.stop();
     };
-  }, [isAlert, PULSE_MIN, PULSE_MAX, scale, stageZoom]);
+  }, [isAlert, PULSE_MIN, PULSE_MAX, stageZoom]);
 
-  // ── Radial glow (sensor alert only)
   useEffect(() => {
     const node = glowRef.current;
     if (!node) return;
@@ -126,7 +125,6 @@ export function SensorNode({
     };
   }, [device.kind, isAlert, R]);
 
-  // ── Pop animation when status changes
   useEffect(() => {
     if (prevStatus.current === device.status) return;
     prevStatus.current = device.status;
